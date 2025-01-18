@@ -1,9 +1,13 @@
-name: Run Python Script Every 2 Hours
+name: Run Twitter Bot (2 hours)
 
 on:
   schedule:
     # Runs every 2 hours
     - cron: "0 */2 * * *"
+  # Run on pushes to the main branch
+  push:
+    branches:
+      - main
 
 jobs:
   run-python-script:
