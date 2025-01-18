@@ -18,12 +18,13 @@ def get_oauth_token() -> tuple[str, str]:
         os.getenv("TWITTER_OAUTH_TOKEN") is not None
         and os.getenv("TWITTER_OAUTH_TOKEN_SECRET") is not None
     ):
+        print("Using existing OAuth tokens")
         return os.getenv("TWITTER_OAUTH_TOKEN"), os.getenv("TWITTER_OAUTH_TOKEN_SECRET")
+
+    print("No OAuth tokens found, generating new ones")
 
     consumer_key = os.environ.get("TWITTER_API_KEY")
     consumer_secret = os.environ.get("TWITTER_API_SECRET")
-
-    print(consumer_secret, consumer_secret)
 
     # Get request token
     request_token_url = "https://api.twitter.com/oauth/request_token?oauth_callback=oob&x_auth_access_type=write"
