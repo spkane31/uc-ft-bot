@@ -1,12 +1,13 @@
 import json
 import math
 import os
+import time
 
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+import pandas as pd
 from requests_oauthlib import OAuth1Session
 import requests
-from bs4 import BeautifulSoup
-import pandas as pd
 
 load_dotenv()
 
@@ -191,11 +192,6 @@ def get_game_free_throws(url: str) -> tuple[int, int]:
         # Parse the HTML using BeautifulSoup
         soup = BeautifulSoup(response.text, "html.parser")
 
-        # # Find all tables and print out the id
-        # tables = soup.find_all("table")
-        # for table in tables:
-        #     print(table.get("id"))
-
         # Locate the specific table using its id
         table = soup.find("table", id="box-score-basic-cincinnati")
 
@@ -221,8 +217,6 @@ def get_game_free_throws(url: str) -> tuple[int, int]:
                 ]
 
                 data.append(cell_values)
-
-                print(cell_values)
 
             data[1][0] = "Player"
             # Convert the data into a pandas DataFrame
@@ -250,7 +244,6 @@ if __name__ == "__main__":
     access_token, access_token_secret = get_oauth_token()
 
     if None in [consumer_key, consumer_secret, access_token, access_token_secret]:
-        # Print out which are missing
         if consumer_key is None:
             print("Missing Twitter API Key")
         if consumer_secret is None:
@@ -325,21 +318,62 @@ if __name__ == "__main__":
         resource_owner_secret=access_token_secret,
     )
 
-    # Making the request
-    response = oauth.post(
-        "https://api.twitter.com/2/tweets",
-        json={"text": msg},
+    # Get the most recent tweet
+    YOUR_TWITTER_USERNAME = "UC_FreeThrowBot"
+    response = oauth.get(
+        f"https://api.twitter.com/2/users/by/username/{YOUR_TWITTER_USERNAME}",
+        params={"user.fields": "id"},
     )
-
-    if response.status_code != 201:
+    if response.status_code != 200:
         raise Exception(
             "Request returned an error: {} {}".format(
                 response.status_code, response.text
             )
         )
+    user_id = response.json()["data"]["id"]
+    print(f"User ID: {user_id}")
 
-    print("Response code: {}".format(response.status_code))
+    response = oauth.get(
+        f"https://api.twitter.com/2/users/{user_id}/tweets",
+        params={
+            "tweet.fields": "created_at",
+            "max_results": 5,  # Has to be between 5 and 100
+        },
+    )
+    if response.status_code != 200:
+        if response.status_code == 429:
+            print("Rate limit exceeded")
+            reset_unix_time = int(response.headers["x-rate-limit-reset"])
+            time_difference = reset_unix_time - int(time.time())
+            minutes = time_difference // 60
+            seconds = time_difference % 60
+            print(
+                f"Rate limit reset at {reset_unix_time}, please wait {minutes} minutes {seconds} seconds"
+            )
 
-    # Saving the response as JSON
-    json_response = response.json()
-    print(json.dumps(json_response, indent=4, sort_keys=True))
+        raise Exception(
+            "Request returned an error: {} {} {}".format(
+                response.status_code, response.text, response.headers
+            )
+        )
+    recent_tweet = response.json()["data"][0]["text"]
+
+    # Check if the most recent tweet is the same as the new tweet
+    if recent_tweet == msg:
+        print("Same content already tweeted")
+    else:
+        # Making the request
+        response = oauth.post(
+            "https://api.twitter.com/2/tweets",
+            json={"text": msg},
+        )
+        if response.status_code != 201:
+            raise Exception(
+                "Request returned an error: {} {}".format(
+                    response.status_code, response.text
+                )
+            )
+        print("Response code: {}".format(response.status_code))
+        # Saving the response as JSON
+        json_response = response.json()
+        print(json.dumps(json_response, indent=4, sort_keys=True))
