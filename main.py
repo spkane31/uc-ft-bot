@@ -249,6 +249,18 @@ if __name__ == "__main__":
 
     access_token, access_token_secret = get_oauth_token()
 
+    if None in [consumer_key, consumer_secret, access_token, access_token_secret]:
+        # Print out which are missing
+        if consumer_key is None:
+            print("Missing Twitter API Key")
+        if consumer_secret is None:
+            print("Missing Twitter API Secret")
+        if access_token is None:
+            print("Missing Twitter Access Token")
+        if access_token_secret is None:
+            print("Missing Twitter Access Token Secret")
+        raise ValueError("Missing Twitter API credentials")
+
     ftm, fta = get_free_throw_attempts()
 
     consecutive_makes = consecutive_make_percentage(ftm, fta, 0.75)
