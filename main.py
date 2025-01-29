@@ -237,6 +237,24 @@ def get_game_free_throws(url: str) -> tuple[int, int]:
     return -1, -1
 
 
+def send_telegram_notification(message: str) -> None:
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = 7333806927
+    # bot = Bot(token=bot_token)
+
+    # bot.send_message(chat_id=chat_id, text=message)
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+    # Define the payload for the request
+    payload = {"chat_id": chat_id, "text": message}
+
+    # Send the message using a POST request
+    response = requests.post(url, data=payload)
+
+    # Print the response (optional)
+    print(response.json())
+
+
 if __name__ == "__main__":
     consumer_key = os.environ.get("TWITTER_API_KEY")
     consumer_secret = os.environ.get("TWITTER_API_SECRET")
@@ -377,3 +395,4 @@ if __name__ == "__main__":
         # Saving the response as JSON
         json_response = response.json()
         print(json.dumps(json_response, indent=4, sort_keys=True))
+        send_telegram_notification(f"Tweeted: {msg}, {json.dumps(json_response)}")
