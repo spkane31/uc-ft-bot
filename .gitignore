@@ -1,2 +1,6 @@
 .env
 /venv
+/.venv
+.DS_Store
+/data/*.csv
+!data/season_stats_2026.csv
