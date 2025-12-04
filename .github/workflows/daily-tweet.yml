@@ -1,0 +1,91 @@
+name: Daily Free Throw Tweet
+
+on:
+  schedule:
+    # Run at noon EST (17:00 UTC) every day
+    - cron: "0 17 * * *"
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  send-tweet:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tweet script
+        env:
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_OAUTH_TOKEN: ${{ secrets.TWITTER_OAUTH_TOKEN }}
+          TWITTER_OAUTH_TOKEN_SECRET: ${{ secrets.TWITTER_OAUTH_TOKEN_SECRET }}
+        run: |
+          python main.py
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet data/season_stats_*.csv; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes to season stats"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Season stats updated"
+          fi
+
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create a new branch with timestamp
+          BRANCH_NAME="update-stats-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH_NAME"
+
+          # Add and commit changes
+          git add data/season_stats_*.csv
+          git commit -m "Update season stats - $(date +%Y-%m-%d)"
+
+          # Push branch
+          git push origin "$BRANCH_NAME"
+
+          # Create PR
+          PR_URL=$(gh pr create \
+            --title "Update season stats - $(date +%Y-%m-%d)" \
+            --body "Automated update of season free throw statistics from daily run." \
+            --base main \
+            --head "$BRANCH_NAME")
+
+          echo "PR created: $PR_URL"
+
+          # Extract PR number from URL
+          PR_NUMBER=$(echo "$PR_URL" | grep -oP '\d+$')
+
+          # Auto-merge the PR
+          gh pr merge "$PR_NUMBER" \
+            --merge \
+            --auto \
+            --delete-branch
+
+          echo "PR #$PR_NUMBER set to auto-merge"

@@ -237,24 +237,6 @@ def get_game_free_throws(url: str) -> tuple[int, int]:
         raise ValueError(f"Failed to fetch page: {response.status_code}")
 
 
-def send_telegram_notification(message: str) -> None:
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = 7333806927
-    # bot = Bot(token=bot_token)
-
-    # bot.send_message(chat_id=chat_id, text=message)
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-
-    # Define the payload for the request
-    payload = {"chat_id": chat_id, "text": message}
-
-    # Send the message using a POST request
-    response = requests.post(url, data=payload)
-
-    # Print the response (optional)
-    print(response.json())
-
-
 def read_season_data(year: int = SEASON_YEAR) -> tuple[int, int] | None:
     """Read the current season FT data from CSV. Returns (ftm, fta) or None if file doesn't exist."""
     file_path = f"data/season_stats_{year}.csv"
@@ -478,4 +460,3 @@ if __name__ == "__main__":
         # Saving the response as JSON
         json_response = response.json()
         print(json.dumps(json_response, indent=4, sort_keys=True))
-        send_telegram_notification(f"Tweeted: {msg}, {json.dumps(json_response)}")
