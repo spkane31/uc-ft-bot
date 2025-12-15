@@ -4,11 +4,11 @@ import os
 import time
 from datetime import datetime
 
+import pandas as pd
+import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import pandas as pd
 from requests_oauthlib import OAuth1Session
-import requests
 
 load_dotenv()
 
