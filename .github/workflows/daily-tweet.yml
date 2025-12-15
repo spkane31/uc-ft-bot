@@ -82,10 +82,9 @@ jobs:
           # Extract PR number from URL
           PR_NUMBER=$(echo "$PR_URL" | grep -oP '\d+$')
 
-          # Auto-merge the PR
+          # Merge the PR immediately
           gh pr merge "$PR_NUMBER" \
             --merge \
-            --auto \
             --delete-branch
 
-          echo "PR #$PR_NUMBER set to auto-merge"
+          echo "PR #$PR_NUMBER merged successfully"
